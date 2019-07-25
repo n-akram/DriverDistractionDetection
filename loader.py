@@ -10,8 +10,8 @@ import os
 import sys
 import cv2
 
-batch_size = 30
-validationShare = 0.2
+batch_size = 32
+validationShare = 0.33
 
 base_path = "data/"
 
