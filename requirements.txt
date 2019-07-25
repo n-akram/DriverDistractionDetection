@@ -1,0 +1,3 @@
+tensorflow-gpu
+keras
+opencv-python
