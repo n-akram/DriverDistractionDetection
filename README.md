@@ -4,6 +4,8 @@ Driver distraction detection using StateFarm database and CNN model
 
 
 ######################### INFORMATION #################################
+
+
 This repository cosists of a driver distraction detection using StateFarm database and CNN model. Two models have been trained with similar structure. One that classifies only mobile based distraction and another that classifies all distractions. The classes used are as follows.
 
     C0: safe driving
