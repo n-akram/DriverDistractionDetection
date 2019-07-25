@@ -50,9 +50,16 @@ GPU: GeForce RTX 2080 Ti
 
 ############################ To Run #####################################
 
-1. Activate the environment: 
+1. Create virtual environment using: 
+    virtualenv TensorKeras
+    Virtualenv packge can be installed using : pip install virtualenv
+    
+2. Install the relevant packages from "requirements.txt"
+    pip install -r requirements.txt
+
+3. Activate the environment: 
     source TensorKeras/bin/activate
 
-2. Run "python main.py" : for all classes predictions
+4. Run "python main.py" : for all classes predictions
 
-3. Run "python main.py -m": for mobile only classes
+5. Run "python main.py -m": for mobile only classes
