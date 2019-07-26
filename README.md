@@ -60,6 +60,10 @@ GPU: GeForce RTX 2080 Ti
 3. Activate the environment: 
     source TensorKeras/bin/activate
 
-4. Run "python main.py" : for all classes predictions
+4. Run "python main.py" : for all classes training
 
-5. Run "python main.py -m": for mobile only classes
+5. Run "python main.py -m": for mobile only classes training
+
+6. Run "python main.py -t" : for all classes predictions
+
+7. Run "python main.py -m -t" : for mobile only classes predictions

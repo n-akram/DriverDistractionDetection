@@ -1,7 +1,10 @@
 '''
 Function to train driver distraction detection
 date: 22.07.2019
-Arguments: -m --> to train mobile only network
+Arguments:  -m --> to train mobile only network
+            -t --> to test a trained network and generate confusion matrix
+            -p --> to provide a new path of the trained model. Default pathn is 
+                    same folder
 '''
 
 import keras
@@ -10,6 +13,7 @@ import matplotlib.pyplot as plt
 import model as m
 import loader as L
 import numpy
+from sklearn.metrics import confusion_matrix
 
 suffix = None
 
@@ -19,9 +23,9 @@ if '-m' in sys.argv:
     model = m.model()[0]
     suffix = "Mobile"
 else:
-	print("INFO: Training for all distractions ...........")
-	model = m.model()[0]
-	suffix= "All"
+    print("INFO: Training for all distractions ...........")
+    model = m.model()[0]
+    suffix= "All"
 
 # Number of epochs 
 epoch = 13
@@ -37,38 +41,81 @@ y_val = numpy.array(y_val)
 es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1)
 mc = keras.callbacks.ModelCheckpoint('best_model' + suffix + '.h5', monitor='val_loss', mode='min')
 
-model.compile(optimizer='RMSprop', loss='categorical_crossentropy', metrics=['accuracy'])
+rmsprop = keras.optimizers.RMSprop(lr=0.0001, decay=1e-6) #rho=0.9, epsilon=None
+
+model.compile(optimizer=rmsprop, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # To check the validity of data
 for ele in x_train:
-	if numpy.isnan(numpy.sum(ele)):
-		print("Found NAAAAAAAAAAAAAAAAAAAAAAAAAAAAN")
-	if numpy.isinf(numpy.sum(ele)):
-		print("Found INFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+    if numpy.isnan(numpy.sum(ele)):
+        print("Found NAAAAAAAAAAAAAAAAAAAAAAAAAAAAN")
+    if numpy.isinf(numpy.sum(ele)):
+        print("Found INFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 for ele in x_val:
-	if numpy.isnan(numpy.sum(ele)):
-		print("Found NAAAAAAAAAAAAAAAAAAAAAAAAAAAAN")
-	if numpy.isinf(numpy.sum(ele)):
-		print("Found INFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+    if numpy.isnan(numpy.sum(ele)):
+        print("Found NAAAAAAAAAAAAAAAAAAAAAAAAAAAAN")
+    if numpy.isinf(numpy.sum(ele)):
+        print("Found INFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
-history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=epoch, batch_size=batch_size, callbacks=[es, mc])
+def getTrainedModel(p='best_modelAll.h5'):
+    if ('-m' in sys.argv) and not('-p' in sys.argv):
+        p = 'best_modelMobile.h5'
+    if '-p' in sys.argv:
+        for arg in sys.argv:
+            if not(arg in ["main.py", "-p", "-m", "-t"]):
+                p = arg
+    return(keras.models.load_model(p))
 
-print(history.history)
+def plotSaveConfusionMatrix(matrix, classes="All"):
+    #for matrix in confusion_matrices:
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.matshow(matrix, cmap='seismic', aspect='auto')
+    for (i, j), z in numpy.ndenumerate(matrix):
+        ax.text(j, i, '{:0.1f}'.format(z), ha='center', va='center',fontsize=8, color='white')
+    plt.title('Confusion Matrix DDD : ' + classes + ' Classes', fontsize=14)
+    plt.ylabel('True Label')
+    plt.xlabel('Predicated Label')
+    if classes == "All":
+        l = numpy.array([0,1,2,3,4,5,6,7,8,9])
+        c = ['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9']
+    else:
+        l = numpy.array([0,1,2,3,4,5])
+        c = ['c0','c1','c2','c3','c4','c5']
+    plt.xticks(l, c)
+    plt.yticks(l, c)
+    plt.savefig(classes + 'Classes' +'Confusion_matrix'+'.png')
 
-# Plot training & validation accuracy values
-plt.plot(history.history['acc'])
-plt.plot(history.history['val_acc'])
-plt.title('Model accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
-plt.show()
+if '-t' in sys.argv:
+    #Testing previously trained model
+    if '-t' in sys.argv:
+        model = getTrainedModel()
+    score = model.evaluate(x_val, y_val, verbose=0)
+    print("%s: %.2f%%" % (model.metrics_names[1], score[1]*100))
+    predictions = model.predict(x_val)
+    matrix = confusion_matrix(y_val.argmax(axis=1), predictions.argmax(axis=1))
+    if '-m'in sys.argv:
+        classes = 'Mobile'
+    else:
+        classes = 'All'
+    print("Confusion Matrix : ", matrix)
+    plotSaveConfusionMatrix(matrix, classes)
+else:
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=epoch, batch_size=batch_size)#, callbacks=[es, mc])
 
-# Plot training & validation loss values
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('Model loss')
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
-plt.show()
+    # Plot training & validation accuracy values
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
+
+    # Plot training & validation loss values
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
