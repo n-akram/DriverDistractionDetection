@@ -24,14 +24,14 @@ def concatenateTrainingPath(c, im):
 
 def categorical(y):
 	if "-m" in sys.argv:
-		return(to_categorical(y, num_classes=6))
+		return(to_categorical(y, num_classes=5))
 	else:
 		return(to_categorical(y, num_classes=10))
 
 def getTotalList():
     line_count = 0
     total_list = []
-    mobile_only = ["c0","c1", "c2", "c3", "c4","c5"]
+    mobile_only = ["c0","c1", "c2", "c3", "c4"]
     with open('data/driver_imgs_list.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:

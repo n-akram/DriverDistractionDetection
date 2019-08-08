@@ -15,6 +15,8 @@ import loader as L
 import numpy
 from sklearn.metrics import confusion_matrix
 
+from keras_preprocessing.image import ImageDataGenerator
+
 suffix = None
 
 if '-m' in sys.argv:
@@ -28,8 +30,8 @@ else:
     suffix= "All"
 
 # Number of epochs 
-epoch = 13
-batch_size = 128 #32 used by authors
+epoch = 50 # 500 for augmentation
+batch_size = 32 #32 used by authors
 
 x_train, y_train, x_val, y_val = L.getArrays()
 x_train = numpy.array(x_train)
@@ -37,13 +39,31 @@ y_train = numpy.array(y_train)
 x_val = numpy.array(x_val)
 y_val = numpy.array(y_val)
 
+datagen = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True)
+datagen.fit(x_train)
+
+validation_generator = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True)
+validation_generator.fit(x_val)
+
+
 # To stop if sufficietly trained
 es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1)
 mc = keras.callbacks.ModelCheckpoint('best_model' + suffix + '.h5', monitor='val_loss', mode='min')
 
-rmsprop = keras.optimizers.RMSprop(lr=0.0001, decay=1e-6) #rho=0.9, epsilon=None
+cb = [mc]
 
-model.compile(optimizer=rmsprop, loss='categorical_crossentropy', metrics=['accuracy'])
+rmsprop = keras.optimizers.RMSprop(lr=0.00001, decay=1e-5) #rho=0.9, epsilon=None
+adam = keras.optimizers.adam(lr=0.0001, decay=1e-5) #rho=0.9, epsilon=None
+
+model.compile(optimizer=rmsprop, loss='mean_squared_error', metrics=['accuracy']) # categorical_crossentropy
 
 # To check the validity of data
 for ele in x_train:
@@ -79,8 +99,8 @@ def plotSaveConfusionMatrix(matrix, classes="All"):
         l = numpy.array([0,1,2,3,4,5,6,7,8,9])
         c = ['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9']
     else:
-        l = numpy.array([0,1,2,3,4,5])
-        c = ['c0','c1','c2','c3','c4','c5']
+        l = numpy.array([0,1,2,3,4])
+        c = ['c0','c1','c2','c3','c4']
     plt.xticks(l, c)
     plt.yticks(l, c)
     plt.savefig(classes + 'Classes' +'Confusion_matrix'+'.png')
@@ -100,7 +120,8 @@ if '-t' in sys.argv:
     print("Confusion Matrix : ", matrix)
     plotSaveConfusionMatrix(matrix, classes)
 else:
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=epoch, batch_size=batch_size)#, callbacks=[es, mc])
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=epoch, batch_size=batch_size, callbacks=cb)
+    #history = model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size), validation_data=(x_val, y_val), steps_per_epoch=len(x_train) / batch_size, epochs=epoch, callbacks=cb)
 
     # Plot training & validation accuracy values
     plt.plot(history.history['acc'])
@@ -109,13 +130,16 @@ else:
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig("Accuracy" + suffix + ".png")
     plt.show()
 
     # Plot training & validation loss values
+    plt.clf() # Clear earlier figure
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
+    plt.savefig("Loss" + suffix + ".png")
     plt.show()
